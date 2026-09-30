@@ -27,7 +27,11 @@ Para compilar y ejecutar este proyecto en tu entorno local de desarrollo (Androi
    ```bash
    git clone https://github.com/niduscripto/Nidus-Cripto.git
 
-############
+### 📄 Licencia
+
+Este proyecto se encuentra bajo los términos de la licencia establecida en el repositorio.
+
+---
 
 ## English
 
@@ -55,3 +59,7 @@ To compile and run this project in your local development environment (Android S
 1. Clone the repository:
    ```bash
    git clone https://github.com/niduscripto/Nidus-Cripto.git
+
+### 📄 License
+
+This project is under the terms specified in the repository's license.

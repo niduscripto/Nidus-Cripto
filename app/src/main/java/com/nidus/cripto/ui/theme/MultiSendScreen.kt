@@ -53,6 +53,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLDecoder
@@ -314,10 +316,14 @@ fun MultiSendScreen(
         if (!isNetworkAvailable) {
             val local = StorageUtils.getLastBtcPrice(context)
             val parsedLocal = local?.toDoubleOrNull() ?: 0.0
-            val safeLocal = if (parsedLocal > 0.0 && parsedLocal < 100_000.0) local else "0.00"
+            val safeLocal = if (parsedLocal > 0.0 && parsedLocal < 1_000_000.0) {
+                BigDecimal(parsedLocal)
+                    .setScale(2, RoundingMode.CEILING)
+                    .toPlainString()
+            } else "0.00"
 
-            btcGlobalPriceText = if (!safeLocal.isNullOrEmpty() && safeLocal != "0.00") "$safeLocal USD" else getStringRes(currentLanguage, "offline_mode")
-            val numericPrice = parseRobustDouble(safeLocal ?: "0.0")
+            btcGlobalPriceText = if (safeLocal != "0.00") "$safeLocal USD" else getStringRes(currentLanguage, "offline_mode")
+            val numericPrice = parseRobustDouble(safeLocal)
             if (numericPrice > 0.0) {
                 globalBtcPriceUsd = numericPrice
             }
@@ -340,8 +346,10 @@ fun MultiSendScreen(
                         val rawPriceStr = text.substringAfter("\"price\":").substringBefore("]").substringBefore("}").trim()
                         val numericVal = rawPriceStr.toDoubleOrNull() ?: parseRobustDouble(rawPriceStr)
 
-                        if (numericVal > 1.0 && numericVal < 100_000.0) {
-                            String.format(Locale.US, "%.2f", numericVal)
+                        if (numericVal > 1.0 && numericVal < 1_000_000.0) {
+                            BigDecimal(numericVal)
+                                .setScale(2, RoundingMode.CEILING)
+                                .toPlainString()
                         } else null
                     } else null
                 }
@@ -357,7 +365,7 @@ fun MultiSendScreen(
             } catch (_: Exception) {
                 val local = StorageUtils.getLastBtcPrice(context)
                 val parsedLocal = local?.toDoubleOrNull() ?: 0.0
-                if (parsedLocal > 1.0 && parsedLocal < 100_000.0) {
+                if (parsedLocal > 1.0 && parsedLocal < 1_000_000.0) {
                     val numericPrice = parseRobustDouble(local!!)
                     withContext(Dispatchers.Main) {
                         btcGlobalPriceText = "$local USD"

@@ -139,7 +139,8 @@ private fun getStringRes(lang: String, key: String): String {
             "bitcoin_entry_no_note" -> "🟢 Bitcoin Entry (No Note)"
             "date" -> "Date"
             "current_price_label" -> "Last Received"
-            "bitcoin_price" -> "Price: "
+            "bitcoin_price" -> "Current Price: "
+            "bitcoin_price_last" -> "Average Price: "
             else -> key
         }
         else -> when (key) {
@@ -196,7 +197,8 @@ private fun getStringRes(lang: String, key: String): String {
             "bitcoin_entry_no_note" -> "🟢 Entrada de Bitcoin (Sin Nota)"
             "date" -> "Fecha"
             "current_price_label" -> "Último Recibido"
-            "bitcoin_price" -> "Precio: "
+            "bitcoin_price" -> "Precio Actual: "
+            "bitcoin_price_last" -> "Precio Promedio: "
             else -> key
         }
     }
@@ -303,7 +305,7 @@ fun NidusCriptoMainApp(
     val initialLocalPrice = StorageUtils.getLastBtcPrice(context)
     val validatedInitialPrice = remember(initialLocalPrice) {
         val parsed = initialLocalPrice?.toDoubleOrNull() ?: 0.0
-        if (parsed > 0.0 && parsed < 100_000.0) initialLocalPrice else "0.00"
+        if (parsed > 0.0 && parsed < 1_000_000.0) initialLocalPrice else "0.00"
     }
 
     var btcGlobalPriceText by remember {
@@ -324,10 +326,14 @@ fun NidusCriptoMainApp(
         if (!isNetworkAvailable) {
             val local = StorageUtils.getLastBtcPrice(context)
             val parsedLocal = local?.toDoubleOrNull() ?: 0.0
-            val safeLocal = if (parsedLocal > 0.0 && parsedLocal < 100_000.0) local else "0.00"
+            val safeLocal = if (parsedLocal > 0.0 && parsedLocal < 1_000_000.0) {
+                BigDecimal(parsedLocal)
+                    .setScale(2, RoundingMode.CEILING)
+                    .toPlainString()
+            } else "0.00"
 
-            btcGlobalPriceText = if (!safeLocal.isNullOrEmpty() && safeLocal != "0.00") "$safeLocal USD" else getStringRes(currentLanguage, "offline_mode")
-            val numericPrice = parseRobustDouble(safeLocal ?: "0.0")
+            btcGlobalPriceText = if (safeLocal != "0.00") "$safeLocal USD" else getStringRes(currentLanguage, "offline_mode")
+            val numericPrice = parseRobustDouble(safeLocal)
             if (numericPrice > 0.0) {
                 globalBtcPriceUsd = numericPrice
             }
@@ -350,8 +356,10 @@ fun NidusCriptoMainApp(
                         val rawPriceStr = text.substringAfter("\"price\":").substringBefore("]").substringBefore("}").trim()
                         val numericVal = rawPriceStr.toDoubleOrNull() ?: parseRobustDouble(rawPriceStr)
 
-                        if (numericVal > 1.0 && numericVal < 100_000.0) {
-                            String.format(Locale.US, "%.2f", numericVal)
+                        if (numericVal > 1.0 && numericVal < 1_000_000.0) {
+                            BigDecimal(numericVal)
+                                .setScale(2, RoundingMode.CEILING)
+                                .toPlainString()
                         } else null
                     } else null
                 }
@@ -367,7 +375,7 @@ fun NidusCriptoMainApp(
             } catch (_: Exception) {
                 val local = StorageUtils.getLastBtcPrice(context)
                 val parsedLocal = local?.toDoubleOrNull() ?: 0.0
-                if (parsedLocal > 1.0 && parsedLocal < 100_000.0) {
+                if (parsedLocal > 1.0 && parsedLocal < 1_000_000.0) {
                     val numericPrice = parseRobustDouble(local!!)
                     withContext(Dispatchers.Main) {
                         btcGlobalPriceText = "$local USD"
@@ -1633,7 +1641,7 @@ private fun HistoryScreenContent(
                         val btcVal = tx.amountSats / 100_000_000.0
                         val usdVal = btcVal * tx.btcPriceUsd
                         val amountStr = String.format(Locale.US, "%s%.8f BTC", if (isReceive) "+" else "-", btcVal)
-
+                        val lastPriceBtc = String.format(Locale.US, "%.2f USD", tx.btcPriceUsd)
                         Card(
                             colors = CardDefaults.cardColors(containerColor = CardBackground),
                             shape = RoundedCornerShape(10.dp),
@@ -1688,28 +1696,30 @@ private fun HistoryScreenContent(
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.White
                                             )
-                                            Text(
-                                                text = "${tx.txid.take(8)}...${tx.txid.takeLast(6)}",
-                                                fontSize = 10.sp,
-                                                color = TextGray
-                                            )
                                         }
                                     }
 
                                     Column(horizontalAlignment = Alignment.End) {
                                         Text(
                                             text = amountStr,
-                                            fontSize = 12.sp,
+                                            fontSize = 14.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = if (isReceive) Color(0xFF4CAF50) else Color.White
                                         )
                                         Text(
                                             text = String.format(Locale.US, "≈ %.2f USD", usdVal),
-                                            fontSize = 10.sp,
+                                            fontSize = 12.sp,
                                             color = TextGray
                                         )
                                     }
                                 }
+
+                                Text(
+                                    text = "${tx.txid.take(28)}........${tx.txid.takeLast(28)}",
+                                    fontSize = 9.sp,
+                                    color = TextGray,
+                                    fontWeight = FontWeight.Normal
+                                )
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -1745,12 +1755,21 @@ private fun HistoryScreenContent(
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.End
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
+                                        text = lastPriceBtc,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF4CAF50),
+                                        textAlign = TextAlign.Start
+                                    )
+                                    Text(
                                         text = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(java.util.Date(tx.timestamp)),
-                                        fontSize = 9.sp,
-                                        color = TextGray
+                                        fontSize = 12.sp,
+                                        color = TextGray,
+                                        textAlign = TextAlign.End
                                     )
                                 }
                             }
@@ -1834,8 +1853,8 @@ private fun PortfolioScreenContent(
 ) {
     val context = LocalContext.current
     var allTransactions by remember { mutableStateOf(StorageUtils.getTransactions(context)) }
-    var contactsList by remember { mutableStateOf(AddressBookManager.getContacts(context, isMainnet)) }
 
+    var contactsList by remember { mutableStateOf(AddressBookManager.getContacts(context, isMainnet)) }
     val savedAddresses = StorageUtils.getAddresses(context)
     val targetPrefix = if (isMainnet) "bc1q" else "tb1q"
     val currentAddresses = remember(savedAddresses, isMainnet) {
@@ -1884,18 +1903,34 @@ private fun PortfolioScreenContent(
     val totalReceivedSats = remember(receivedTransactions) { receivedTransactions.sumOf { it.amountSats } }
     val totalSentSats = remember(sentTransactions) { sentTransactions.sumOf { it.amountSats } }
 
-    val totalAmountSum = remember(addressGroups, globalBtcPriceUsd) {
-        val activeGroups = addressGroups.filter { it.totalSats > 0L && it.lastBuyPrice > 0.0 }
-        if (activeGroups.isNotEmpty()) {
-            activeGroups.sumOf { group ->
-                (group.totalSats / 100_000_000.0) * group.lastBuyPrice
-            }
-        } else {
-            0.0
+    val address = ""
+    val weightedAverageCostData = remember(allTransactions, address) {
+        val receivedTxs = allTransactions.filter { tx ->
+            val isReceive = tx.type.equals("Recibido", true) ||
+                    tx.type.equals("Received", true) ||
+                    tx.type.equals("RECEIVE", true)
+            val matchesAddress = address.isEmpty() || tx.address.equals(address, true)
+            isReceive && matchesAddress
         }
+        var totalSatoshis: Long = 0
+        var totalCostUSD: Double = 0.0
+        for (tx in receivedTxs) {
+            val sats = tx.amountSats
+            val priceAtTx = tx.btcPriceUsd
+
+            totalSatoshis += sats
+            totalCostUSD += (sats.toDouble() / 100_000_000.0) * priceAtTx
+        }
+        val totalBtc = totalSatoshis.toDouble() / 100_000_000.0
+        val averageCostPerBtc = if (totalBtc > 0) totalCostUSD / totalBtc else 0.0
+        Triple(totalSatoshis, totalCostUSD, averageCostPerBtc)
     }
-    val totalAmountSumX = BigDecimal(totalAmountSum).setScale(2, RoundingMode.HALF_UP).toDouble()
-    val totalProfitX = currentPortfolioUsd - totalAmountSumX
+    val (totalSats, totalCostUSD, avgCostPerBtcX) = weightedAverageCostData
+
+    val avgCostPerBtc = BigDecimal(avgCostPerBtcX).setScale(2, RoundingMode.HALF_UP).toDouble()
+    val totalAmountSumX = portfolioBtc * avgCostPerBtc
+    val totalAmountSum = BigDecimal(totalAmountSumX).setScale(2, RoundingMode.HALF_UP).toDouble()
+    val totalProfitX = currentPortfolioUsd - totalAmountSum
     val totalProfit = BigDecimal(totalProfitX).setScale(2, RoundingMode.HALF_UP).toDouble()
     val isTotalPositiveA = totalProfit >= 0
     val totalSignPrefixA = if (isTotalPositiveA) "+" else ""
@@ -1904,8 +1939,8 @@ private fun PortfolioScreenContent(
 
     val totalPercentageProfit = if (totalAmountSum != 0.0) {
         try {
-            val totalPercentageProfitX = (totalProfit / totalAmountSum) * 100
-            BigDecimal(totalPercentageProfitX).setScale(3, RoundingMode.HALF_UP).toDouble()
+            val totalPercentageProfitX = (totalProfit / currentPortfolioUsd) * 100
+            BigDecimal(totalPercentageProfitX).setScale(2, RoundingMode.HALF_UP).toDouble()
         } catch (e: Exception) {
             0.0
         }
@@ -1915,7 +1950,7 @@ private fun PortfolioScreenContent(
 
     val isTotalPositiveP = totalPercentageProfit >= 0
     val totalSignPrefixP = if (isTotalPositiveP) "+" else ""
-    val totalPercentageProfitText = String.format(Locale.US, " (%s%.3f%%)", totalSignPrefixP, totalPercentageProfit)
+    val totalPercentageProfitText = String.format(Locale.US, " (%s%.2f%%)", totalSignPrefixP, totalPercentageProfit)
     val totalPercentageProfitColor = if (isTotalPositiveP) Color(0xFF4CAF50) else Color(0xFFE53935)
 
     var selectedAddressForEdit by remember { mutableStateOf<String?>(null) }
@@ -1973,11 +2008,7 @@ private fun PortfolioScreenContent(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = String.format(
-                            Locale.US,
-                            getStringRes(currentLanguage, "bitcoin_price") + "%.2f USD",
-                            globalBtcPriceUsd
-                        ),
+                        text = "${String.format(Locale.US,getStringRes(currentLanguage, "bitcoin_price") + "%.2f USD", globalBtcPriceUsd)}\n${String.format(Locale.US,getStringRes(currentLanguage, "bitcoin_price_last") + "%.2f USD", avgCostPerBtc)}",
                         fontSize = 14.sp,
                         color = Color(0xFF4CAF50),
                         fontWeight = FontWeight.Bold,
@@ -2089,7 +2120,7 @@ private fun PortfolioScreenContent(
         } else {
             addressGroups.forEach { group ->
                 val groupBtcVal = group.totalSats / 100_000_000.0
-                val currentGroupLastUsdValueX = groupBtcVal * group.lastBuyPrice
+                val currentGroupLastUsdValueX = groupBtcVal * avgCostPerBtc
                 val currentGroupLastUsdValue = BigDecimal(currentGroupLastUsdValueX).setScale(2, RoundingMode.HALF_UP).toDouble()
                 val currentGroupUsdValueX = groupBtcVal * globalBtcPriceUsd
                 val currentGroupUsdValue = BigDecimal(currentGroupUsdValueX).setScale(2, RoundingMode.HALF_UP).toDouble()
@@ -2103,7 +2134,7 @@ private fun PortfolioScreenContent(
                 val percentajeProfit = if (currentGroupUsdValue != 0.0) {
                     try {
                         val percentajeProfitX = ((currentGroupUsdValue - currentGroupLastUsdValue) / currentGroupUsdValue) * 100
-                        BigDecimal(percentajeProfitX).setScale(3, RoundingMode.HALF_UP).toDouble()
+                        BigDecimal(percentajeProfitX).setScale(2, RoundingMode.HALF_UP).toDouble()
                     } catch (e: Exception) {
                         0.0
                     }
@@ -2113,9 +2144,9 @@ private fun PortfolioScreenContent(
 
                 val isPositiveA = percentajeProfit >= 0
                 val signPrefixA = if (isPositiveA) "+" else ""
-                val percentajeProfitText = String.format(Locale.US, " (%s%.3f%%)", signPrefixA, percentajeProfit)
+                val percentajeProfitText = String.format(Locale.US, " (%s%.2f%%)", signPrefixA, percentajeProfit)
 
-                val usdText = "$textTotal ${String.format(Locale.US, "%.2f", globalBtcPriceUsd)} ${String.format(Locale.US, "≈ %.2f USD", currentGroupUsdValue)}\n$textCompra ${String.format(Locale.US, "%.2f", group.lastBuyPrice)} ${String.format(Locale.US, "≈ %.2f USD", currentGroupLastUsdValue)}"
+                val usdValueText = "$textTotal ${String.format(Locale.US, "%.2f", globalBtcPriceUsd)} ${String.format(Locale.US, "≈ %.2f USD", currentGroupUsdValue)}\n$textCompra ${String.format(Locale.US, "%.2f", avgCostPerBtc)} ${String.format(Locale.US, "≈ %.2f USD", currentGroupLastUsdValue)}"
 
                 val contactMatch = contactsList.find { it.address.equals(group.address, ignoreCase = true) }
                 val customName = contactMatch?.name?.takeIf { it.isNotBlank() }
@@ -2127,12 +2158,12 @@ private fun PortfolioScreenContent(
                     title = titleLabel,
                     address = addressSubtitle,
                     btcAmount = String.format(Locale.US, "%.8f BTC", groupBtcVal),
-                    usdValueText = usdText,
+                    usdValueText = usdValueText,
                     profitChangeText = profitChangeText,
                     percentajeProfitText = percentajeProfitText,
                     isPositive = isPositive,
                     isPositivea = isPositiveA,
-                    buyPrice = if (group.lastTimestamp > 0L) java.text.SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(java.util.Date(group.lastTimestamp)) else "-",
+                    buyPrice = if (group.lastTimestamp > 0L) java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(java.util.Date(group.lastTimestamp)) else "-",
                     accentColor = activeAccentColor,
                     currentLanguage = currentLanguage,
                     onEditClick = {

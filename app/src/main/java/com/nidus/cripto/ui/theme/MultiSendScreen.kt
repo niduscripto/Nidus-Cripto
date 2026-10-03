@@ -743,7 +743,7 @@ fun MultiSendScreen(
                             fontSize = 11.sp
                         )
                         Text(
-                            text = getStringRes(currentLanguage, "bitcoin_price") + btcGlobalPriceText,
+                            text = btcGlobalPriceText,
                             fontSize = 14.sp,
                             color = Color(0xFF4CAF50),
                             fontWeight = FontWeight.Bold

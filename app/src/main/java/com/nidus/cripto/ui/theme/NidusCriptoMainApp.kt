@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -799,11 +800,12 @@ private fun GlobalAppHeader(
                     .size(42.dp)
                     .clip(RoundedCornerShape(10.dp))
             )
-            Text(
-                text = "NIDUS CRIPTO",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = GoldAccent
+            Image(
+                painter = painterResource(id = R.drawable.nidus_logo_text),
+                contentDescription = "Nidus Cripto",
+                modifier = Modifier
+                    .height(32.dp)
+                    .width(180.dp)
             )
         }
 
@@ -953,7 +955,7 @@ private fun HomeScreenContent(
                 ) {
                     Text(getStringRes(currentLanguage, "total_balance"), fontSize = 12.sp, color = TextGray, fontWeight = FontWeight.SemiBold)
                     Text(
-                        text = getStringRes(currentLanguage, "bitcoin_price") + btcGlobalPriceText,
+                        text = btcGlobalPriceText,
                         fontSize = 14.sp,
                         color = if (btcGlobalPriceText.contains("Offline") || btcGlobalPriceText.contains("Sin conexión")) OfflineRed else Color(0xFF4CAF50),
                         fontWeight = FontWeight.Bold
@@ -2293,7 +2295,24 @@ private fun PortfolioItemCard(
                         )
                     }
                 }
-
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(
+                            Color.Black.copy(alpha = 0.2f),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.app_icon_bitcoin),
+                        contentDescription = "Nidus Cripto",
+                        modifier = Modifier
+                            .size(35.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Fit
+                    )
+                }
             }
 
             Text(

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -131,12 +133,12 @@ fun PinEntryScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = getStringRes(currentLanguage, "app_title"),
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = GoldAccent,
-                letterSpacing = 2.sp
+            Image(
+                painter = painterResource(id = R.drawable.nidus_logo_text),
+                contentDescription = "Nidus Cripto",
+                modifier = Modifier
+                    .height(32.dp)
+                    .width(180.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(

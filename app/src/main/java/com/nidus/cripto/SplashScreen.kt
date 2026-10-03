@@ -96,12 +96,12 @@ fun SplashScreen(onSplashFinished: () -> Unit) {
                         .clip(RoundedCornerShape(20.dp))
                 )
                 Spacer(modifier = Modifier.height(20.dp))
-                Text(
-                    text = getStringRes(currentLanguage, "app_title"),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = GoldAccent,
-                    letterSpacing = 3.sp
+                Image(
+                    painter = painterResource(id = R.drawable.nidus_logo_text),
+                    contentDescription = "Nidus Cripto",
+                    modifier = Modifier
+                        .height(32.dp)
+                        .width(180.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(

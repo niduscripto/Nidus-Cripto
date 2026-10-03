@@ -8,7 +8,7 @@
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#0D0D0D</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/app_icon</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/app_icon_legacy</item>
         <item name="postSplashScreenTheme">@style/Theme.NidusCripto</item>
     </style>
 </resources>

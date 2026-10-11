@@ -35,11 +35,6 @@ object TransactionManager {
 
     const val DUST_LIMIT_SATS = 546L
 
-    const val APP_FEE_ADDRESS_MAINNET = BuildConfig.APP_FEE_ADDRESS_MAINNET
-    const val APP_FEE_ADDRESS_TESTNET = BuildConfig.APP_FEE_ADDRESS_TESTNET
-
-    const val APP_FEE_USD = 0.25
-
     private fun getStringRes(lang: String, key: String, vararg args: Any): String {
         return when (lang) {
             "en" -> when (key) {
@@ -47,7 +42,7 @@ object TransactionManager {
                 "err_address_empty" -> "Address #${args.firstOrNull() ?: 0} is empty."
                 "err_invalid_network" -> "Address #${args.firstOrNull() ?: 0} does not correspond to the ${args.getOrNull(1) ?: ""} network."
                 "err_dust_limit" -> "Amount #${args.firstOrNull() ?: 0} is below the dust limit (${args.getOrNull(1) ?: 0} Sats)."
-                "err_config_fee" -> "Configuration error: App Fee address not configured for the network."
+                "err_config_fee" -> "Configuration error."
                 "err_insufficient_balance" -> "Insufficient balance. You are missing ${args.firstOrNull() ?: 0} Satoshis to cover amounts + fees."
                 "err_private_key_mismatch" -> "Internal error: The number of private keys does not match the UTXOs."
                 "err_insufficient_fees" -> "Insufficient funds to cover fees."
@@ -58,7 +53,7 @@ object TransactionManager {
                 "err_address_empty" -> "La dirección #${args.firstOrNull() ?: 0} está vacía."
                 "err_invalid_network" -> "La dirección #${args.firstOrNull() ?: 0} no corresponde a la red ${args.getOrNull(1) ?: ""}."
                 "err_dust_limit" -> "El monto #${args.firstOrNull() ?: 0} es inferior al límite de polvo (${args.getOrNull(1) ?: 0} Sats)."
-                "err_config_fee" -> "Error de configuración: Dirección de App Fee no configurada para la red."
+                "err_config_fee" -> "Error de configuración."
                 "err_insufficient_balance" -> "Saldo insuficiente. Le faltan ${args.firstOrNull() ?: 0} Satoshis para cubrir montos + comisiones."
                 "err_private_key_mismatch" -> "Error interno: La cantidad de claves privadas no coincide con los UTXOs."
                 "err_insufficient_fees" -> "Fondos insuficientes para cubrir comisiones."
@@ -103,33 +98,19 @@ object TransactionManager {
             totalAmountSats += amount
         }
 
-        val appFeeSats = if (btcPriceUsd > 0.0) {
-            val btcAmountForFee = APP_FEE_USD / btcPriceUsd
-            (btcAmountForFee * 100_000_000).toLong()
-        } else {
-            1000L
-        }
-
-        val finalAppFeeSats = if (appFeeSats < DUST_LIMIT_SATS) DUST_LIMIT_SATS else appFeeSats
-        val targetAppFeeAddress = if (isMainnet) APP_FEE_ADDRESS_MAINNET else APP_FEE_ADDRESS_TESTNET
-
-        if (targetAppFeeAddress.isBlank() || targetAppFeeAddress.contains("xxxxxx")) {
-            return buildErrorEstimate(getStringRes(currentLanguage, "err_config_fee"))
-        }
-
-        val hasAppFeeOutput = finalAppFeeSats >= DUST_LIMIT_SATS
-        val outputsCount = recipients.size + (if (hasAppFeeOutput) 1 else 0) + 1
+        val appFeeSats = 0L
+        val outputsCount = recipients.size + 1
         val vBytes = 11 + (estimatedInputsCount * 68) + (outputsCount * 31)
 
         val networkFeeSats = vBytes * feeRateSatPerVb.toLong()
-        val totalRequiredSats = totalAmountSats + networkFeeSats + finalAppFeeSats
+        val totalRequiredSats = totalAmountSats + networkFeeSats
 
         if (availableBalanceSats < totalRequiredSats) {
             val deficit = totalRequiredSats - availableBalanceSats
             return TransactionEstimate(
                 totalAmountSats = totalAmountSats,
                 networkFeeSats = networkFeeSats,
-                appFeeSats = finalAppFeeSats,
+                appFeeSats = appFeeSats,
                 totalRequiredSats = totalRequiredSats,
                 vBytes = vBytes,
                 isValid = false,
@@ -140,7 +121,7 @@ object TransactionManager {
         return TransactionEstimate(
             totalAmountSats = totalAmountSats,
             networkFeeSats = networkFeeSats,
-            appFeeSats = finalAppFeeSats,
+            appFeeSats = appFeeSats,
             totalRequiredSats = totalRequiredSats,
             vBytes = vBytes,
             isValid = true
@@ -173,18 +154,6 @@ object TransactionManager {
                 tx.addOutput(value, address)
                 totalOutputsSats += recipient.amountSats
             }
-
-            val appFeeSats = if (btcPriceUsd > 0.0) {
-                val btcAmountForFee = APP_FEE_USD / btcPriceUsd
-                (btcAmountForFee * 100_000_000).toLong()
-            } else {
-                1000L
-            }
-            val finalAppFeeSats = if (appFeeSats < DUST_LIMIT_SATS) DUST_LIMIT_SATS else appFeeSats
-            val targetAppFeeAddress = if (isMainnet) APP_FEE_ADDRESS_MAINNET else APP_FEE_ADDRESS_TESTNET
-
-            tx.addOutput(Coin.valueOf(finalAppFeeSats), Address.fromString(params, targetAppFeeAddress))
-            totalOutputsSats += finalAppFeeSats
 
             var totalInputSats = 0L
             for (utxo in utxos) {

@@ -52,7 +52,7 @@ enum class AppScreen {
     MAIN_APP
 }
 
-private fun getStringRes(lang: String, key: String, vararg args: Any): String {
+private fun getStringRes(lang: String, key: String): String {
     return when (lang) {
         "en" -> when (key) {
             "permissions_title" -> "APPLICATION PERMISSIONS"
@@ -63,8 +63,8 @@ private fun getStringRes(lang: String, key: String, vararg args: Any): String {
             "notifications_desc" -> "To securely and instantly notify you when you receive funds or your transactions are confirmed."
             "grant_permissions_btn" -> "GRANT PERMISSIONS AND CONTINUE"
 
-            "terms_title" -> "TERMS OF SERVICE AND FEE DISCLOSURE"
-            "terms_body" -> "NIDUS CRYPTO GOLD CORE LICENSE AGREEMENT AND FEE BREAKDOWN\n\n1. OWNERSHIP, CUSTODY, AND RISK: This wallet generates cryptographic keys and their 12-word BIP39 seed phrases strictly locally and encrypted (AES-256). You are the sole custodian and absolute responsible party for safeguarding your PIN and backup phrases. Loss of this data implies total and irreversible loss of your commercial assets. Nidus Crypto Labs Inc. has no access to or custody of your keys.\n\n2. COMMERCIAL MONETIZATION MODEL (APP FEE): For support, technical maintenance, and premium infrastructure development, a transparent, fixed, and invariable fee of ${args.firstOrNull() ?: "$0.25"} USD (automatically converted to Satoshis according to the current Bitcoin exchange rate) will apply to each outbound transaction transferred from this app, whether in single sends or multi-payment batches.\n\n3. REGULATED COMMERCIAL EXCEPTIONS: No fee deduction or charge will apply only if the net transfer amount is less than 0.00001 BTC.\n\n4. FEE DESTINATION ADDRESS: Settled fees will be automatically and transparently sent on the blockchain to the developer's authorized treasury under the collection addresses stipulated in the software core.\n\n5. ACCEPTANCE AND CONSENT: By pressing 'Accept and Continue', you declare that you understand, consent to, and authorize the app's fee breakdown and assume all civil and legal responsibility for its use."
+            "terms_title" -> "TERMS OF SERVICE"
+            "terms_body" -> "NIDUS CRYPTO GOLD CORE LICENSE AGREEMENT\n\n1. OWNERSHIP, CUSTODY, AND RISK: This wallet generates cryptographic keys and their 12-word BIP39 seed phrases strictly locally and encrypted (AES-256). You are the sole custodian and absolute responsible party for safeguarding your PIN and backup phrases. Loss of this data implies total and irreversible loss of your commercial assets. Nidus Crypto Labs Inc. has no access to or custody of your keys.\n\n2. 100% OPEN SOURCE & NO APP FEES: This application is completely open source and decentralized. No intermediary fees or hidden charges are applied by the app. You only pay the standard blockchain miner fees required by the Bitcoin network.\n\n3. ACCEPTANCE AND CONSENT: By pressing 'Accept and Continue', you declare that you understand, consent to, and assume all civil and legal responsibility for its use."
             "terms_checkbox" -> "I have read and accept the terms and conditions of the agreement"
             "accept_btn" -> "Accept and Continue"
             "reject_btn" -> "Reject and Exit"
@@ -85,8 +85,8 @@ private fun getStringRes(lang: String, key: String, vararg args: Any): String {
             "notifications_desc" -> "Para avisarte al instante de forma segura cuando recibas fondos o se confirmen tus transacciones."
             "grant_permissions_btn" -> "CONCEDER PERMISOS Y CONTINUAR"
 
-            "terms_title" -> "TÉRMINOS DE SERVICIO Y DIVULGACIÓN DE TARIFAS"
-            "terms_body" -> "CONTRATO DE LICENCIA Y DESGLOSE DE TARIFAS DE NIDUS CRIPTO GOLD CORE\n\n1. PROPIEDAD, CUSTODIA Y RIESGO: Esta billetera genera claves criptográficas y sus 12 palabras semilla BIP39 de forma estrictamente local y cifrada (AES-256). Usted es el único custodio y responsable absoluto de resguardar su PIN y sus frases de respaldo. La pérdida de estos datos implica la pérdida total e irreversible de sus activos comerciales. Nidus Cripto Labs Inc. no tiene acceso ni custodia de sus llaves.\n\n2. MODELO DE MONETIZACIÓN COMERCIAL (APP FEE): Para el soporte, mantenimiento técnico y desarrollo de la infraestructura premium, se aplicará un cargo transparente, fijo e invariable de ${args.firstOrNull() ?: "$0.25"} USD (convertido automáticamente a Satoshis según la cotización vigente de Bitcoin) sobre cada transacción saliente transferida desde esta aplicación, ya sea en envíos individuales o en bloques de multipagos.\n\n3. EXCEPCIONES COMERCIALES REGULADAS: No se aplicará deducción o cobro de comisiones únicamente si el monto de la transferencia neta es inferior a 0.00001 BTC.\n\n4. DIRECCIÓN DE DESTINO DE COMISIONES: Las tarifas liquidadas se enviarán de forma automatizada y transparente en la cadena de bloques a la tesorería autorizada del desarrollador bajo las direcciones de recaudo estipuladas en el núcleo del software.\n\n5. ACEPTACIÓN Y CONSENTIMIENTO: Al presionar 'Aceptar y Continuar', usted declara comprender, consentir y autorizar el desglose de tarifas de la aplicación y asume toda responsabilidad civil y legal de su uso."
+            "terms_title" -> "TÉRMINOS DE SERVICIO"
+            "terms_body" -> "CONTRATO DE LICENCIA DE NIDUS CRIPTO GOLD CORE\n\n1. PROPIEDAD, CUSTODIA Y RIESGO: Esta billetera genera claves criptográficas y sus 12 palabras semilla BIP39 de forma estrictamente local y cifrada (AES-256). Usted es el único custodio y responsable absoluto de resguardar su PIN y sus frases de respaldo. La pérdida de estos datos implica la pérdida total e irreversible de sus activos comerciales. Nidus Cripto Labs Inc. no tiene acceso ni custodia de sus llaves.\n\n2. 100% CÓDIGO ABIERTO Y SIN COMISIONES DE APP: Esta aplicación es completamente de código abierto y descentralizada. La aplicación no aplica comisiones intermediarias ni cargos ocultos. Solo pagas la tarifa estándar de mineros requerida por la red Bitcoin.\n\n3. ACEPTACIÓN Y CONSENTIMIENTO: Al presionar 'Aceptar y Continuar', usted declara comprender, consentir y asumir toda responsabilidad civil y legal de su uso."
             "terms_checkbox" -> "He leído y acepto los términos y condiciones del contrato"
             "accept_btn" -> "Aceptar y Continuar"
             "reject_btn" -> "Rechazar y Salir"
@@ -430,7 +430,7 @@ fun TermsAndConditionsScreen(
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = getStringRes(currentLanguage, "terms_body", "\$${TransactionManager.APP_FEE_USD}"),
+                    text = getStringRes(currentLanguage, "terms_body"),
                     fontSize = 11.sp,
                     color = Color.White,
                     lineHeight = 15.sp

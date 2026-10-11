@@ -90,8 +90,6 @@ private fun getStringRes(lang: String, key: String): String {
             "expand_summary" -> "Expand summary"
             "sum" -> "Sum:"
             "mining" -> "Mining"
-            "app_fee" -> "App Fee $0.25:"
-            "omitted" -> "(Omitted)"
             "total_btc" -> "Total (BTC):"
             "total_usd" -> "Total (USD):"
             "complete_valid_addresses" -> "Complete valid addresses and amounts"
@@ -145,8 +143,6 @@ private fun getStringRes(lang: String, key: String): String {
             "expand_summary" -> "Desplegar resumen"
             "sum" -> "Suma:"
             "mining" -> "Minería"
-            "app_fee" -> "App Fee $0.25:"
-            "omitted" -> "(Omitida)"
             "total_btc" -> "Total (BTC):"
             "total_usd" -> "Total (USD):"
             "complete_valid_addresses" -> "Complete las direcciones y montos válidos"
@@ -284,24 +280,6 @@ fun MultiSendScreen(
 
     val effectiveUtxos = userUtxos
 
-    val isAppFeeAddressOwnedByWallet = remember(effectiveUtxos, isMainnet) {
-        try {
-            val mnemonic = StorageUtils.getMnemonic(context) ?: ""
-            if (mnemonic.isNotBlank()) {
-                (0..5).any { idx ->
-                    val derivedAddr = RealWalletManager.deriveAddressFromMnemonic(mnemonic, addressIndex = idx, isMainnet = isMainnet)
-                    if(isMainnet) {
-                        derivedAddr.equals(TransactionManager.APP_FEE_ADDRESS_MAINNET, ignoreCase = true)
-                    }else{
-                        derivedAddr.equals(TransactionManager.APP_FEE_ADDRESS_TESTNET, ignoreCase = true)
-                    }
-                }
-            } else false
-        } catch (e: Exception) {
-            false
-        }
-    }
-
     var globalBtcPriceUsd by remember {
         mutableStateOf(parseRobustDouble(StorageUtils.getLastBtcPrice(context) ?: "0.0"))
     }
@@ -389,15 +367,12 @@ fun MultiSendScreen(
 
     val totalAmountsBtc = recipients.sumOf { it.amountBtc.toDoubleOrNull() ?: 0.0 }
 
-    val estimatedVBytes = 10 + (maxOf(1, effectiveUtxos.size) * 68) + ((recipients.size + 1) * 31)
+    val estimatedVBytes = 10 + (maxOf(1, effectiveUtxos.size) * 68) + (recipients.size * 31)
     val miningFeeSats = estimatedVBytes * feeRateSatPerVb
     val miningFeeBtc = miningFeeSats / 100_000_000.0
 
-    val appFeeUsd = if (isAppFeeAddressOwnedByWallet) 0.0 else TransactionManager.APP_FEE_USD
-    val appFeeBtc = if (globalBtcPriceUsd > 0.0) appFeeUsd / globalBtcPriceUsd else 0.0
-
     val totalBalanceSats = effectiveUtxos.sumOf { it.valueSats }
-    val currentTotalSats = (totalAmountsBtc * 100_000_000).toLong() + miningFeeSats + (appFeeBtc * 100_000_000).toLong()
+    val currentTotalSats = (totalAmountsBtc * 100_000_000).toLong() + miningFeeSats
 
     val totalBtcSatsFinal = if (totalBalanceSats > 0 && kotlin.math.abs(totalBalanceSats - currentTotalSats) < 500) {
         totalBalanceSats
@@ -675,11 +650,9 @@ fun MultiSendScreen(
                     Button(
                         onClick = {
                             val totalBalanceSats = effectiveUtxos.sumOf { it.valueSats }
-                            val extraOutputForAppFee = if (appFeeBtc > 0.0) 1 else 0
-                            val totalOutputsCount = recipients.size + extraOutputForAppFee
-                            val estimatedVBytes = (effectiveUtxos.size * 68) + (totalOutputsCount * 31) + 10 + 30
+                            val estimatedVBytes = (effectiveUtxos.size * 68) + (recipients.size * 31) + 10 + 30
                             val totalFeeSats = estimatedVBytes * feeRateSatPerVb
-                            val availableForSendSats = totalBalanceSats - totalFeeSats - (appFeeBtc * 100_000_000).toLong()
+                            val availableForSendSats = totalBalanceSats - totalFeeSats
 
                             if (availableForSendSats > 0) {
                                 val btcStr = "%.8f".format(availableForSendSats / 100_000_000.0).replace(',', '.')
@@ -770,10 +743,6 @@ fun MultiSendScreen(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("${getStringRes(currentLanguage, "mining")} ($feeRateSatPerVb sat/vB):", color = TextGray, fontSize = 10.sp)
                             Text("%.8f BTC".format(miningFeeBtc), color = Color.White, fontSize = 10.sp)
-                        }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(getStringRes(currentLanguage, "app_fee"), color = TextGray, fontSize = 10.sp)
-                            Text(if (isAppFeeAddressOwnedByWallet) "0.00000000 BTC ${getStringRes(currentLanguage, "omitted")}" else "%.8f BTC".format(appFeeBtc), color = Color.White, fontSize = 10.sp)
                         }
                     }
 
@@ -1070,10 +1039,6 @@ fun MultiSendScreen(
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(getStringRes(currentLanguage, "mining_fee"), color = TextGray, fontSize = 10.sp)
                                     Text("%.8f BTC".format(miningFeeBtc), color = Color.White, fontSize = 10.sp)
-                                }
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(getStringRes(currentLanguage, "app_fee"), color = TextGray, fontSize = 10.sp)
-                                    Text("%.8f BTC".format(appFeeBtc), color = Color.White, fontSize = 10.sp)
                                 }
                                 HorizontalDivider(color = Color.DarkGray, modifier = Modifier.padding(vertical = 2.dp))
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

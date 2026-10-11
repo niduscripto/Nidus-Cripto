@@ -160,18 +160,6 @@ class SendViewModel(application: Application) : AndroidViewModel(application) {
                         totalOutputsSats += recipient.amountSats
                     }
 
-                    val appFeeSats = if (btcPriceUsd > 0.0) {
-                        val btcAmountForFee = TransactionManager.APP_FEE_USD / btcPriceUsd
-                        (btcAmountForFee * 100_000_000).toLong()
-                    } else {
-                        1000L
-                    }
-                    val finalAppFeeSats = if (appFeeSats < TransactionManager.DUST_LIMIT_SATS) TransactionManager.DUST_LIMIT_SATS else appFeeSats
-                    val targetAppFeeAddress = if (isMainnet) TransactionManager.APP_FEE_ADDRESS_MAINNET else TransactionManager.APP_FEE_ADDRESS_TESTNET
-
-                    tx.addOutput(Coin.valueOf(finalAppFeeSats), org.bitcoinj.core.Address.fromString(params, targetAppFeeAddress))
-                    totalOutputsSats += finalAppFeeSats
-
                     var totalInputSats = 0L
                     for (utxo in utxos) {
                         val txHash = Sha256Hash.wrap(utxo.txid)
